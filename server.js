@@ -1,9 +1,13 @@
 var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
-var mongo = require('mongodb').MongoClient;
+var mongoose = require('mongoose');
 
-var database;
+
+//  schema and model of js object in mongoose in order to send and retrieve messages
+var Message = mongoose.model('Message', {
+	msg: String
+});
 
 //  allows the server to read json data that is sent
 app.use(bodyParser.json());
@@ -23,18 +27,31 @@ app.use(function(req,res,next){
 app.post('/api/message',function(req,res){
 	console.log(req.body);
 
-	//. req.body contains the object of the message from the front end
-	database.collection('messages').insertOne(req.body);
+	//  use database to insert collected information from form
+	var message = new Message(req.body);
+
+	message.save();  //  save data to database
 
 
 	res.status(200);
 });
 
+function GetMessages() {
+	Message.find({}).exec(function(err,result){
+		console.log(result);
+	});
+}
+
 // first param is err and second is reference to the database
-mongo.connect("mongodb://localhost:27017/test", function(err,db){
+mongoose.connect("mongodb://localhost:27017/test", function(err,db){
 	if(!err){
 		console.log("we are connected to mongo!");
+		GetMessages();  //  use the GetMessages function to log the result from the database
+
+		//  assign db to database
 		database = db;
+	}else{
+		console.log(err);
 	}
 });
 
