@@ -2,52 +2,48 @@ var express = require('express');
 var app = express();
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
+var jwt = require('jwt-simple');
+var moment = require('moment');
 
 
-//  schema and model of js object in mongoose in order to send and retrieve messages
-var Message = mongoose.model('Message', {
-	msg: String
-});
+// require controllers
+//. serving an object containing functions
+var auth = require('./controllers/auth.js');
+var message = require('./controllers/message.js');
+var checkAuthenticated = require('./services/checkAuthenticated');
+var cors = require('./services/cors.js');
+
+
+/*  MIDDLEWARE  */
 
 //  allows the server to read json data that is sent
 app.use(bodyParser.json());
-
 //  CORS cross origin resource sharing
-app.use(function(req,res,next){
-	//  allow access from any location
-	res.header("Access-Control-Allow-Origin", "*");
+app.use(cors);
 
-	//  determine what type of header is allowed...allow any headers of content type
-	res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-	
-	next();  // prevents any freezing of middleware chain
-});
+
+
+/*  REQUESTS */
+
+//  provides the api for all of the data in raw format
+app.get('/api/message', message.get);
 
 // receive message on the backend
-app.post('/api/message',function(req,res){
-	console.log(req.body);
+app.post('/api/message', checkAuthenticated, message.post);
 
-	//  use database to insert collected information from form
-	var message = new Message(req.body);
-
-	message.save();  //  save data to database
+//. auth registration endpoint
+//. when submit is clicked in the registration form this grabs post method
+app.post('/auth/register', auth.register);
 
 
-	res.status(200);
-});
 
-function GetMessages() {
-	Message.find({}).exec(function(err,result){
-		console.log(result);
-	});
-}
+/*  CONNECTION  */
 
 // first param is err and second is reference to the database
 mongoose.connect("mongodb://localhost:27017/test", function(err,db){
 	if(!err){
 		console.log("we are connected to mongo!");
-		GetMessages();  //  use the GetMessages function to log the result from the database
-
+		
 		//  assign db to database
 		database = db;
 	}else{
